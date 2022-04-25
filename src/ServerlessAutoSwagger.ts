@@ -207,8 +207,8 @@ export default class ServerlessAutoSwagger {
 
     this.log.notice('Creating Swagger file...');
 
-    const packagePath = path.dirname(require.resolve('serverless-auto-swagger/package.json'))
-    const resourcesPath = `${packagePath}/dist/resources`
+    const packagePath = path.dirname(require.resolve('@bidlogix/serverless-auto-swagger/package.json'));
+    const resourcesPath = `${packagePath}/dist/resources`;
     // TODO enable user to specify swagger file path. also needs to update the swagger json endpoint.
     await fs.copy(resourcesPath, './swagger');
 
