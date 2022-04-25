@@ -1,4 +1,5 @@
 'use strict';
+import * as path from 'path';
 import * as fs from 'fs-extra';
 import type { Options } from 'serverless';
 import type { Service } from 'serverless/aws';
@@ -206,8 +207,10 @@ export default class ServerlessAutoSwagger {
 
     this.log.notice('Creating Swagger file...');
 
+    const packagePath = path.dirname(require.resolve('serverless-auto-swagger/package.json'))
+    const resourcesPath = `${packagePath}/dist/resources`
     // TODO enable user to specify swagger file path. also needs to update the swagger json endpoint.
-    await fs.copy('./node_modules/serverless-auto-swagger/dist/resources', './swagger');
+    await fs.copy(resourcesPath, './swagger');
 
     if (this.serverless.service.provider.runtime?.includes('python')) {
       const swaggerStr = JSON.stringify(this.swagger, null, 2)
@@ -218,7 +221,7 @@ export default class ServerlessAutoSwagger {
       swaggerPythonString += `\ndocs = ${swaggerStr}`;
       await writeFile('./swagger/swagger.py', swaggerPythonString);
     } else {
-      await fs.copy('./node_modules/serverless-auto-swagger/dist/resources', './swagger', {
+      await fs.copy(resourcesPath, './swagger', {
         filter: (src) => src.slice(-2) === 'js',
       });
 
