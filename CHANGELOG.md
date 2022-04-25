@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.4.2](https://github.com/SamWSoftware/serverless-auto-swagger/compare/v2.4.1...v2.4.2) (2022-xx-xx)
+
+### Features
+
+- Fixes issue compiling where the `node_modules` directory is not in the same directory as the `serverless.yml`
+  ```yaml
+  http:
+    path: /hello/{name}/{simpleParam}
+    method: get
+    parameters:
+      name:
+        description: the name to say hello to
+        required: true
+      simpleParam: true
+  ```
+
 ### [2.4.1](https://github.com/SamWSoftware/serverless-auto-swagger/compare/v2.4.0...v2.4.1) (2022-03-17)
 
 ### Features
