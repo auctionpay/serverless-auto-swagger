@@ -1,5 +1,5 @@
 {
-  "name": "@bidlogix/serverless-auto-swagger",
+  "name": "serverless-auto-swagger",
   "version": "2.4.2",
   "description": "Automatically generate a swagger file from your Serverless Framework config file",
   "main": "dist/index.js",
