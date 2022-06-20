@@ -1,6 +1,6 @@
 'use strict';
-import * as path from 'path';
-import * as fs from 'fs-extra';
+import { copy, readFileSync } from 'fs-extra';
+import { dirname } from 'path';
 import type { Options } from 'serverless';
 import type { Service } from 'serverless/aws';
 import type { Logging } from 'serverless/classes/Plugin';
@@ -55,7 +55,7 @@ export default class ServerlessAutoSwagger {
     this.serverless = serverless;
     this.options = options;
 
-    if (io) this.log = io.log;
+    if (io?.log) this.log = io.log;
     else
       this.log = {
         notice: this.serverless.cli?.log ?? console.log,
@@ -113,7 +113,7 @@ export default class ServerlessAutoSwagger {
   /** Updates this.swagger with swagger file overrides */
   gatherSwaggerFiles = (swaggerFiles: string[]): void => {
     swaggerFiles.forEach((filepath) => {
-      const fileData = fs.readFileSync(filepath, 'utf8');
+      const fileData = readFileSync(filepath, 'utf8');
 
       const jsonData = JSON.parse(fileData);
 
@@ -149,7 +149,7 @@ export default class ServerlessAutoSwagger {
       await Promise.all(
         typesFile.map(async (filepath) => {
           try {
-            const fileData = fs.readFileSync(filepath, 'utf8');
+            const fileData = readFileSync(filepath, 'utf8');
 
             const { data } = await convert({ data: fileData });
             // change the #/components/schema to #/definitions
@@ -207,10 +207,10 @@ export default class ServerlessAutoSwagger {
 
     this.log.notice('Creating Swagger file...');
 
-    const packagePath = path.dirname(require.resolve('@bidlogix/serverless-auto-swagger/package.json'));
+    const packagePath = dirname(require.resolve('@bidlogix/serverless-auto-swagger/package.json'));
     const resourcesPath = `${packagePath}/dist/resources`;
     // TODO enable user to specify swagger file path. also needs to update the swagger json endpoint.
-    await fs.copy(resourcesPath, './swagger');
+    await copy(resourcesPath, './swagger');
 
     if (this.serverless.service.provider.runtime?.includes('python')) {
       const swaggerStr = JSON.stringify(this.swagger, null, 2)
@@ -221,7 +221,7 @@ export default class ServerlessAutoSwagger {
       swaggerPythonString += `\ndocs = ${swaggerStr}`;
       await writeFile('./swagger/swagger.py', swaggerPythonString);
     } else {
-      await fs.copy(resourcesPath, './swagger', {
+      await copy(resourcesPath, './swagger', {
         filter: (src) => src.slice(-2) === 'js',
       });
 
@@ -256,8 +256,8 @@ export default class ServerlessAutoSwagger {
       description: http.description ?? '',
       tags: http.swaggerTags,
       operationId: `${functionName}.${method}.${http.path}`,
-      consumes: ['application/json'],
-      produces: ['application/json'],
+      consumes: http.consumes ?? ['application/json'],
+      produces: http.produces ?? ['application/json'],
       // This is actually type `HttpEvent | HttpApiEvent`, but we can lie since only HttpEvent params (or shared params) are used
       parameters: this.httpEventToParameters(http as CustomHttpEvent),
       responses: this.formatResponses(http.responseData ?? http.responses),
@@ -342,13 +342,11 @@ export default class ServerlessAutoSwagger {
         name: 'body',
         description: 'Body required in the request',
         required: true,
-        schema: {
-          $ref: `#/definitions/${httpEvent.bodyType}`,
-        },
+        schema: { $ref: `#/definitions/${httpEvent.bodyType}` },
       });
     }
 
-    const rawPathParams: PathParameters['path'] = httpEvent.parameters?.path;
+    const rawPathParams: PathParameters['path'] = httpEvent.request?.parameters?.paths;
     const match = httpEvent.path.match(/[^{}]+(?=})/g);
     let pathParameters = match ?? [];
 
@@ -362,8 +360,15 @@ export default class ServerlessAutoSwagger {
     // If no match, will just be [] anyway
     pathParameters.forEach((param: string) => parameters.push(this.pathToParam(param)));
 
-    if (httpEvent.headerParameters) {
-      const rawHeaderParams: HeaderParameters = httpEvent.headerParameters;
+    if (httpEvent.headerParameters || httpEvent.request?.parameters?.headers) {
+      // If no headerParameters are provided, try to use the builtin headers
+      const rawHeaderParams: HeaderParameters =
+        httpEvent.headerParameters ??
+        Object.entries(httpEvent.request!.parameters!.headers!).reduce(
+          (acc, [name, required]) => ({ ...acc, [name]: { required, type: 'string' } }),
+          {}
+        );
+
       Object.entries(rawHeaderParams).forEach(([param, data]) => {
         parameters.push({
           in: 'header',
@@ -375,8 +380,15 @@ export default class ServerlessAutoSwagger {
       });
     }
 
-    if (httpEvent.queryStringParameters) {
-      const rawQueryParams: QueryStringParameters = httpEvent.queryStringParameters;
+    if (httpEvent.queryStringParameters || httpEvent.request?.parameters?.querystrings) {
+      // If no queryStringParameters are provided, try to use the builtin query strings
+      const rawQueryParams: QueryStringParameters =
+        httpEvent.queryStringParameters ??
+        Object.entries(httpEvent.request!.parameters!.querystrings!).reduce(
+          (acc, [name, required]) => ({ ...acc, [name]: { required, type: 'string' } }),
+          {}
+        );
+
       Object.entries(rawQueryParams).forEach(([param, data]) => {
         parameters.push({
           in: 'query',

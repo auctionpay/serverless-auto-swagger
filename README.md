@@ -21,6 +21,8 @@ plugins:
 plugins: ['serverless-auto-swagger'];
 ```
 
+**_NOTE_**: This plugin _must_ come before any transform plugins (i.e. `serverless-webpack` or `serverless-plugin-typescript`), and _must_ come before `serverless-offline` if included.
+
 ## Usage
 
 This plugin is designed to work with vanilla Serverless Framework. All you need to do is add this plugin to your plugin list and it will generate the swagger file and add the endpoints required. When you deploy your API, your new swagger UI will be available at `https://{your-url-domain}/swagger`.
@@ -145,6 +147,8 @@ http: {
 
 ![Query String Parameters](./doc_images/queryStringParams.png)
 
+If no `queryStringParameters` are defined, the plugin will do its best to generate headers based on any Serverless `request.parameters.querystrings` that are defined.
+
 ### Multi-Valued Query String Parameters
 
 If you use multi-value query string parameters (array), then you must specify that your `type` is `array` and specify your data type (string or integer) in `arrayItemsType`
@@ -195,6 +199,12 @@ http: {
 },
 ```
 
+If no `headerParameters` are defined, the plugin will do its best to generate headers based on any Serverless `request.parameters.headers` that are defined.
+
+### Path Parameters
+
+Path parameters are resolved first by looking at `request.parameters.paths`, and then by resolving any additional parameters in the http event path (i.e. `/{id}`).
+
 ### Exclude an endpoint
 
 You can exclude some endpoints from the swagger generation by adding `exclude` to the http event:
@@ -207,6 +217,22 @@ http: {
 }
 ```
 
+### MIME Types
+
+You can specify the MIME types by adding `consumes` and `produces` to the http event. Default for both is `['application/json']`
+
+```js
+http: {
+    path: 'hello',
+    method: 'post',
+    consumes: ['application/json', 'application/pdf'],
+    produces: ['application/json', 'application/pdf'],
+}
+```
+
 ## with Serverless Offline
 
-In the plugin list, you must list serverless-auto-swagger before the serverless-offline plugin. If you don't you won't get the required endpoints added to your local endpoints.
+In the plugin list, you must list `serverless-auto-swagger` before the `serverless-offline` plugin.
+If you don't, you won't get the required endpoints added to your local endpoints.
+
+To use serverless v2, you must run serverless-offline in backwards compatibility mode with `serverless offline start`.

@@ -95,6 +95,8 @@ export type PathParameters = {
 export interface CustomHttpEvent extends Http {
   method: Uppercase<HttpMethod> | Lowercase<HttpMethod>;
   swaggerTags?: string[];
+  produces?: string[];
+  consumes?: string[];
   summary?: string;
   description?: string;
   responseData?: HttpResponses;
@@ -103,12 +105,13 @@ export interface CustomHttpEvent extends Http {
   bodyType?: string;
   headerParameters?: HeaderParameters;
   queryStringParameters?: QueryStringParameters;
-  parameters?: PathParameters;
 }
 
 export interface CustomHttpApiEvent extends HttpApiEvent {
   method: Lowercase<HttpMethod> | Uppercase<HttpMethod>;
   swaggerTags?: string[];
+  produces?: string[];
+  consumes?: string[];
   description?: string;
   summary?: string;
   responseData?: HttpResponses;
